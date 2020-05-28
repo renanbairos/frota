@@ -4,6 +4,7 @@ import com.alelo.frota.model.Vehicle;
 import com.alelo.frota.repository.VehicleRepository;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.CollectionUtils;
@@ -16,6 +17,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/vehicles")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class VehicleController {
 
     @Autowired
@@ -23,10 +25,17 @@ public class VehicleController {
 
     private List<String> errosRequest;
 
-    @GetMapping
-    public List<Vehicle> getAllVehicles() {
+    @GetMapping("/page/{page}")
+    public List<Vehicle> getVehiclesByPage(@PathVariable("page") int page) {
 
-        return this.vehicleRepository.findAll();
+        return this.vehicleRepository.findAll(PageRequest.of(page, 10)).getContent();
+
+    }
+
+    @GetMapping("/count")
+    public Long getCountVehicles() {
+
+        return this.vehicleRepository.count();
 
     }
 
@@ -60,9 +69,22 @@ public class VehicleController {
     @DeleteMapping("/{id}")
     public ResponseEntity deleteVehicle(@PathVariable("id") Long id) {
 
-        this.vehicleRepository.deleteById(id);
+        ResponseEntity retorno;
 
-        return ResponseEntity.ok().body("Vehicle deleted");
+        Optional<Vehicle> oldVehicleOpt = this.vehicleRepository.findById(id);
+
+        if(oldVehicleOpt.isPresent()){
+
+            this.vehicleRepository.deleteById(id);
+            retorno = new ResponseEntity<Vehicle>(HttpStatus.OK);
+
+        } else {
+
+            retorno =  new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
+        }
+
+        return retorno;
 
     }
 
